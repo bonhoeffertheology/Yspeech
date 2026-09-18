@@ -6,13 +6,13 @@
   <title>Smart Voice Prompter</title>
   <style>
     :root {
-      --bg-color: #0d0e12;
-      --text-muted: #525866;
-      --text-active: #ffffff;
+      --bg-color: #0b0c10;
+      --text-muted: #4a5568;
+      --text-highlight: #ffffff;
       --accent-color: #3b82f6;
-      --highlight-bg: rgba(59, 130, 246, 0.15);
-      --font-size: 32px;
-      --line-height: 1.8;
+      --read-color: #1e293b;
+      --font-size: 34px;
+      --line-height: 2.1;
     }
 
     * {
@@ -25,22 +25,22 @@
     body {
       background-color: var(--bg-color);
       color: var(--text-muted);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    /* 상단 제어 바 (태블릿 최적화) */
+    /* 헤더 컨트롤 바 */
     header {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       padding: 12px 24px;
-      background: #161922;
-      border-bottom: 1px solid #282f3e;
+      background: #141721;
+      border-bottom: 1px solid #232936;
       gap: 12px;
       z-index: 10;
     }
@@ -52,9 +52,9 @@
     }
 
     button {
-      background: #252b3b;
+      background: #1e2330;
       color: #e2e8f0;
-      border: 1px solid #3c445c;
+      border: 1px solid #333d52;
       padding: 10px 18px;
       font-size: 15px;
       font-weight: 600;
@@ -79,7 +79,7 @@
     button.active {
       background: #ef4444;
       border-color: #ef4444;
-      animation: pulse 1.5s infinite;
+      animation: pulse 1.6s infinite;
     }
 
     @keyframes pulse {
@@ -101,42 +101,54 @@
       accent-color: var(--accent-color);
     }
 
-    /* 본문 프롬프터 컨테이너 */
+    /* 스크립트 뷰포트 */
     #prompter-container {
       flex: 1;
-      overflow-y: auto;
-      padding: 35vh 12vw; /* 상·하단 패딩으로 활성 문장이 중앙에 오도록 배치 */
-      scroll-behavior: smooth;
+      overflow-y: scroll;
+      padding: 40vh 14vw 60vh 14vw; /* 중앙 시선 정렬용 여백 */
+      scrollbar-width: none;
     }
 
-    .chunk {
+    #prompter-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    #prompter-text {
       font-size: var(--font-size);
       line-height: var(--line-height);
-      margin-bottom: 2rem;
-      padding: 12px 16px;
-      border-radius: 12px;
-      transition: color 0.3s ease, background 0.3s ease, transform 0.2s ease;
+      word-break: keep-all;
+      word-wrap: break-word;
+    }
+
+    /* 단어 단위 스팬 스타일 */
+    .word {
+      display: inline;
+      padding: 2px 3px;
+      border-radius: 4px;
+      transition: color 0.15s ease, background 0.15s ease;
       cursor: pointer;
     }
 
-    .chunk.active {
-      color: var(--text-active);
-      background: var(--highlight-bg);
+    .word.read {
+      color: var(--read-color);
+    }
+
+    .word.active {
+      color: var(--text-highlight);
       font-weight: 700;
-      transform: scale(1.02);
-      border-left: 4px solid var(--accent-color);
+      background: rgba(59, 130, 246, 0.2);
     }
 
-    .chunk.past {
-      color: #2b3040;
+    .word.upcoming {
+      color: var(--text-muted);
     }
 
-    /* 텍스트 편집 모달 */
+    /* 원고 수정 모달 */
     #editor-modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 20;
       padding: 24px;
       flex-direction: column;
@@ -160,14 +172,15 @@
       margin-bottom: 16px;
     }
 
-    /* 상태 표시 바 */
+    /* 하단 상태바 */
     #status-bar {
-      padding: 6px 24px;
+      padding: 8px 24px;
       font-size: 13px;
-      background: #090a0d;
+      background: #08090d;
       color: #64748b;
       display: flex;
       justify-content: space-between;
+      border-top: 1px solid #161a24;
     }
   </style>
 </head>
@@ -182,22 +195,24 @@
     <div class="controls-group">
       <div class="slider-container">
         <label for="font-size">글자 크기</label>
-        <input type="range" id="font-size" min="20" max="56" value="32" />
+        <input type="range" id="font-size" min="22" max="64" value="34" />
       </div>
       <button id="btn-reset">처음으로</button>
     </div>
   </header>
 
-  <div id="prompter-container"></div>
-
-  <div id="status-bar">
-    <span id="speech-preview">대기 중...</span>
-    <span id="index-counter">0 / 0</span>
+  <div id="prompter-container">
+    <div id="prompter-text"></div>
   </div>
 
-  <!-- 원고 수정 모달 -->
+  <div id="status-bar">
+    <span id="speech-preview">준비됨</span>
+    <span id="progress-counter">0 / 0</span>
+  </div>
+
+  <!-- 원고 수정 창 -->
   <div id="editor-modal">
-    <textarea id="script-input" placeholder="여기에 발표 원고나 스크립트를 입력하세요..."></textarea>
+    <textarea id="script-input" placeholder="발표 원고를 입력하세요..."></textarea>
     <div style="display:flex; justify-content: flex-end; gap: 12px;">
       <button id="btn-cancel">취소</button>
       <button id="btn-save" class="primary">적용하기</button>
@@ -205,22 +220,24 @@
   </div>
 
   <script>
-    // --- 기본 샘플 텍스트 ---
-    const DEFAULT_SCRIPT = `안녕하세요. 오늘 발표를 시작하겠습니다.
-음성 인식 프롬프터는 발표자의 호흡과 발화 속도에 맞추어 자동으로 스크롤됩니다.
-태블릿 환경에 맞추어 화면 어디든 터치하여 원하는 문장으로 이동할 수도 있습니다.
-인식률이 떨어지는 환경에서도 당황하지 않고 수동 스크롤을 병행할 수 있도록 설계되었습니다.
-이제 준비한 원고를 입력하고 프롬프터를 직접 테스트해 보세요.`;
+    const DEFAULT_SCRIPT = `안녕하세요. 오늘 프롬프터 시스템 시연을 시작하겠습니다.
+엘가토 프롬프터처럼 말을 시작하면 단어의 흐름에 맞추어 스크롤이 부드럽고 자연스럽게 실시간으로 올라갑니다.
+말을 끝까지 맺지 않아도 중간 발화 내용을 실시간으로 분석하여 목표 위치를 따라갑니다.
+만약 말을 조금 더 빨리 하더라도 스크립트가 유연하게 가속하여 발표자의 속도를 쫓아옵니다.
+태블릿 터치를 통해 언제든지 읽고 싶은 위치를 직접 선택하여 이동할 수도 있습니다.
+준비되셨다면 원고 수정 버튼을 눌러 실제 발표 원고를 입력해 보세요.`;
 
-    // --- State 관리 ---
     const state = {
-      chunks: [],
+      words: [],            // 원본 단어 객체 배열
       currentIndex: 0,
+      targetScrollTop: 0,
       isListening: false,
-      recognition: null
+      recognition: null,
+      keepAliveTimer: null
     };
 
     const container = document.getElementById('prompter-container');
+    const textContainer = document.getElementById('prompter-text');
     const btnToggle = document.getElementById('btn-toggle');
     const btnEdit = document.getElementById('btn-edit');
     const btnReset = document.getElementById('btn-reset');
@@ -229,146 +246,170 @@
     const btnSave = document.getElementById('btn-save');
     const btnCancel = document.getElementById('btn-cancel');
     const speechPreview = document.getElementById('speech-preview');
-    const indexCounter = document.getElementById('index-counter');
+    const progressCounter = document.getElementById('progress-counter');
     const fontSizeSlider = document.getElementById('font-size');
 
-    // --- 텍스트 전처리 및 청크 파싱 ---
-    function parseScript(text) {
-      return text
-        .split(/\n+/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
+    // 특수문자 제거 후 순수 단어 토큰 추출
+    function normalizeWord(str) {
+      return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'<>]/g, "").trim().toLowerCase();
     }
 
-    function renderScript() {
-      container.innerHTML = '';
-      state.chunks.forEach((chunk, idx) => {
-        const el = document.createElement('div');
-        el.className = `chunk ${idx === state.currentIndex ? 'active' : ''}`;
-        el.innerText = chunk;
-        el.dataset.index = idx;
-        
-        // 터치/클릭 시 해당 위치로 즉각 이동
-        el.addEventListener('click', () => {
-          setCurrentIndex(idx);
+    // 텍스트 파싱 (단어 단위 분할 및 줄바꿈 보존)
+    function parseScript(rawText) {
+      const tokens = [];
+      const lines = rawText.split('\n');
+
+      lines.forEach((line, lineIdx) => {
+        const wordsInLine = line.trim().split(/\s+/);
+        wordsInLine.forEach((w) => {
+          if (w.length > 0) {
+            tokens.push({
+              raw: w,
+              clean: normalizeWord(w),
+              isLineBreak: false
+            });
+          }
+        });
+        if (lineIdx < lines.length - 1 && tokens.length > 0) {
+          tokens[tokens.length - 1].isLineBreak = true;
+        }
+      });
+      return tokens;
+    }
+
+    function renderTokens() {
+      textContainer.innerHTML = '';
+      state.words.forEach((token, idx) => {
+        const span = document.createElement('span');
+        span.className = 'word upcoming';
+        span.innerText = token.raw + ' ';
+        span.dataset.index = idx;
+
+        // 터치/클릭 즉각 동기화
+        span.addEventListener('click', () => {
+          setWordIndex(idx);
         });
 
-        container.appendChild(el);
+        textContainer.appendChild(span);
+
+        if (token.isLineBreak) {
+          textContainer.appendChild(document.createElement('br'));
+          textContainer.appendChild(document.createElement('br'));
+        }
       });
-      updateCounter();
-      scrollToCurrent();
+
+      setWordIndex(0);
+      updateTargetScroll();
     }
 
-    function setCurrentIndex(idx) {
-      if (idx < 0 || idx >= state.chunks.length) return;
+    function setWordIndex(idx) {
+      if (idx < 0 || idx >= state.words.length) return;
       state.currentIndex = idx;
-      
-      const elements = container.querySelectorAll('.chunk');
-      elements.forEach((el, i) => {
-        el.className = 'chunk';
-        if (i < idx) el.classList.add('past');
-        if (i === idx) el.classList.add('active');
+
+      const spans = textContainer.querySelectorAll('.word');
+      spans.forEach((s, i) => {
+        if (i < idx) {
+          s.className = 'word read';
+        } else if (i === idx) {
+          s.className = 'word active';
+        } else {
+          s.className = 'word upcoming';
+        }
       });
 
-      updateCounter();
-      scrollToCurrent();
+      progressCounter.innerText = `${state.currentIndex + 1} / ${state.words.length}`;
+      updateTargetScroll();
     }
 
-    function scrollToCurrent() {
-      const activeEl = container.querySelector('.chunk.active');
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
+    // 활성 단어의 위치를 읽어 목표 스크롤 위치 계산
+    function updateTargetScroll() {
+      const activeSpan = textContainer.querySelector(`.word[data-index="${state.currentIndex}"]`);
+      if (!activeSpan) return;
 
-    function updateCounter() {
-      indexCounter.innerText = `${state.currentIndex + 1} /${state.chunks.length}`;
-    }
-
-    // --- 텍스트 매칭 알고리즘 (간단 자카드 유사도) ---
-    function cleanText(str) {
-      return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").toLowerCase();
-    }
-
-    function findMatchingChunk(transcript) {
-      const cleanTranscript = cleanText(transcript);
-      const transcriptWords = new Set(cleanTranscript.split(/\s+/));
+      const spanRect = activeSpan.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
       
-      let bestMatchIndex = -1;
-      let highestScore = 0;
+      // 현재 컨테이너 스크롤 값 + 대상 엘리먼트의 상대 오프셋 - 화면 중앙점
+      const currentScroll = container.scrollTop;
+      const offset = spanRect.top - containerRect.top;
+      const centerLine = container.clientHeight * 0.38; // 상단 38% 지점에 시선 맞춤
 
-      // 현재 읽는 위치 기준 앞뒤 3개 문장 범위 우선 탐색
-      const start = Math.max(0, state.currentIndex);
-      const end = Math.min(state.chunks.length, state.currentIndex + 4);
+      state.targetScrollTop = currentScroll + (offset - centerLine);
+    }
+
+    // 선형 보간을 활용한 부드러운 스크롤 루프 (Lerp Scroll)
+    function smoothScrollLoop() {
+      const diff = state.targetScrollTop - container.scrollTop;
+      if (Math.abs(diff) > 0.5) {
+        // 프레임당 8%씩 완만하게 목표치로 접근
+        container.scrollTop += diff * 0.08;
+      }
+      requestAnimationFrame(smoothScrollLoop);
+    }
+    requestAnimationFrame(smoothScrollLoop);
+
+    // 실시간 음성 단어 매칭 엔진
+    function processRealtimeSpeech(transcript) {
+      if (!transcript) return;
+      
+      const incomingWords = transcript.trim().split(/\s+/).map(normalizeWord).filter(Boolean);
+      if (incomingWords.length === 0) return;
+
+      const lastWord = incomingWords[incomingWords.length - 1];
+
+      // 현재 읽는 위치를 기준으로 앞뒤 8개 단어 반경 탐색
+      const lookAheadRange = 12;
+      const start = Math.max(0, state.currentIndex - 2);
+      const end = Math.min(state.words.length, state.currentIndex + lookAheadRange);
 
       for (let i = start; i < end; i++) {
-        const chunkWords = cleanText(state.chunks[i]).split(/\s+/);
-        let intersection = 0;
-
-        chunkWords.forEach(word => {
-          if (transcriptWords.has(word)) intersection++;
-        });
-
-        const score = intersection / Math.max(chunkWords.length, 1);
-        if (score > 0.25 && score > highestScore) { // 최소 25% 단어 매칭
-          highestScore = score;
-          bestMatchIndex = i;
+        const targetClean = state.words[i].clean;
+        
+        // 끝말 일치 혹은 포함 관계 탐색
+        if (targetClean === lastWord || (lastWord.length >= 2 && targetClean.includes(lastWord))) {
+          setWordIndex(i);
+          return;
         }
       }
-
-      return bestMatchIndex;
     }
 
-    // --- 음성 인식 Web Speech API 설정 ---
+    // Web Speech API 초기화
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        alert("현재 브라우저는 Web Speech API를 지원하지 않습니다. Chrome 또는 Safari 최신 버전을 권장합니다.");
+        speechPreview.innerText = "Web Speech API 미지원 브라우저";
         btnToggle.disabled = true;
         return;
       }
 
       const rec = new SpeechRecognition();
       rec.continuous = true;
-      rec.interimResults = true;
+      rec.interimResults = true; // 실시간 발화 캐치
       rec.lang = 'ko-KR';
 
       rec.onresult = (event) => {
-        let interimTranscript = '';
+        let interimText = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const text = event.results[i][0].transcript;
-          interimTranscript += text;
-          
-          if (event.results[i].isFinal) {
-            const matchedIdx = findMatchingChunk(text);
-            if (matchedIdx !== -1 && matchedIdx >= state.currentIndex) {
-              setCurrentIndex(matchedIdx);
-            }
-          }
+          const part = event.results[i][0].transcript;
+          interimText += part;
         }
-        speechPreview.innerText = `인식 중: ${interimTranscript.slice(-30)}`;
         
-        // 중간 인식(interim) 결과로도 빠른 추적
-        const quickMatch = findMatchingChunk(interimTranscript);
-        if (quickMatch !== -1 && quickMatch > state.currentIndex) {
-          setCurrentIndex(quickMatch);
-        }
+        speechPreview.innerText = `🗣️ ${interimText.slice(-25)}`;
+        // 중간 발화 도중에도 즉시 위치 갱신
+        processRealtimeSpeech(interimText);
       };
 
+      // 팝업 없이 조용하게 오류 처리 및 세션 유지
       rec.onerror = (e) => {
-        console.error("Speech Recognition Error:", e.error);
-        if (e.error === 'not-allowed') {
-          alert("마이크 권한이 필요합니다.");
-          stopListening();
-        }
+        console.warn("Speech API 상태:", e.error);
       };
 
       rec.onend = () => {
-        // 지속 인식을 위한 재시작 처리
+        // 사용자가 명시적으로 정지하지 않았다면 조용히 재연결
         if (state.isListening) {
           try {
             rec.start();
-          } catch(err) {}
+          } catch (e) {}
         }
       };
 
@@ -377,48 +418,47 @@
 
     function startListening() {
       if (!state.recognition) initSpeechRecognition();
+      state.isListening = true;
       try {
         state.recognition.start();
-        state.isListening = true;
-        btnToggle.innerText = '⏹️ 인식 정지';
-        btnToggle.classList.add('active');
-        speechPreview.innerText = "듣는 중...";
-      } catch (e) {
-        console.error(e);
-      }
+      } catch(e) {}
+      btnToggle.innerText = '⏹️ 인식 정지';
+      btnToggle.classList.add('active');
+      speechPreview.innerText = "듣고 있습니다...";
     }
 
     function stopListening() {
+      state.isListening = false;
       if (state.recognition) {
-        state.isListening = false;
-        state.recognition.stop();
-        btnToggle.innerText = '🎙️ 인식 시작';
-        btnToggle.classList.remove('active');
-        speechPreview.innerText = "정지됨";
+        try {
+          state.recognition.stop();
+        } catch(e) {}
       }
+      btnToggle.innerText = '🎙️ 인식 시작';
+      btnToggle.classList.remove('active');
+      speechPreview.innerText = "정지됨";
     }
 
-    // --- 이벤트 바인딩 ---
+    // 이벤트 리스너
     btnToggle.addEventListener('click', () => {
       if (state.isListening) stopListening();
       else startListening();
     });
 
     btnReset.addEventListener('click', () => {
-      setCurrentIndex(0);
+      setWordIndex(0);
     });
 
     btnEdit.addEventListener('click', () => {
-      scriptInput.value = state.chunks.join('\n\n');
+      scriptInput.value = state.words.map(w => w.raw + (w.isLineBreak ? '\n' : ' ')).join('').trim();
       modal.classList.add('open');
     });
 
     btnSave.addEventListener('click', () => {
-      const newText = scriptInput.value.trim();
-      if (newText) {
-        state.chunks = parseScript(newText);
-        state.currentIndex = 0;
-        renderScript();
+      const val = scriptInput.value.trim();
+      if (val) {
+        state.words = parseScript(val);
+        renderTokens();
       }
       modal.classList.remove('open');
     });
@@ -429,18 +469,17 @@
 
     fontSizeSlider.addEventListener('input', (e) => {
       document.documentElement.style.setProperty('--font-size', `${e.target.value}px`);
-      scrollToCurrent();
+      updateTargetScroll();
     });
 
-    // 화면 회전(가로/세로 변경) 시 스크롤 중앙 정렬 유지
     window.addEventListener('resize', () => {
-      scrollToCurrent();
+      updateTargetScroll();
     });
 
-    // --- 초기화 ---
+    // 시작
     window.addEventListener('DOMContentLoaded', () => {
-      state.chunks = parseScript(DEFAULT_SCRIPT);
-      renderScript();
+      state.words = parseScript(DEFAULT_SCRIPT);
+      renderTokens();
       initSpeechRecognition();
     });
   </script>
