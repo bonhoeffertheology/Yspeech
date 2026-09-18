@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Yspeech - On-Device Prompter</title>
+  <title>Yspeech Prompter</title>
   <style>
     :root {
       --bg-color: #0b0c10;
@@ -13,26 +13,17 @@
       --font-size: 36px;
       --line-height: 2.1;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       background-color: var(--bg-color);
       color: var(--text-muted);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       position: relative;
     }
-
-    /* 상단 컨트롤 헤더 */
     header {
       display: flex;
       justify-content: space-between;
@@ -40,20 +31,11 @@
       padding: 10px 20px;
       background: #12141a;
       border-bottom: 1px solid #20242f;
-      gap: 12px;
       z-index: 10;
     }
-
-    .controls-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .controls-group { display: flex; align-items: center; gap: 10px; }
     .icon-btn {
-      width: 42px;
-      height: 42px;
-      padding: 0;
+      width: 42px; height: 42px;
       border-radius: 8px;
       display: inline-flex;
       align-items: center;
@@ -63,40 +45,10 @@
       background: #181b24;
       color: #e2e8f0;
       transition: all 0.15s ease;
-      user-select: none;
     }
-
-    .icon-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: none;
-      stroke: #ffffff;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .icon-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .icon-btn:active:not(:disabled) {
-      transform: scale(0.94);
-      background: #232836;
-    }
-
-    .icon-btn.active {
-      background: #ffffff;
-      border-color: #ffffff;
-    }
-
-    .icon-btn.active svg {
-      stroke: #000000;
-      fill: #000000;
-    }
-
-    /* 수치 조절 스텝퍼 */
+    .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; }
+    .icon-btn.active { background: #fff; border-color: #fff; }
+    .icon-btn.active svg { stroke: #000; fill: #000; }
     .stepper-group {
       display: inline-flex;
       align-items: center;
@@ -104,44 +56,17 @@
       border: 1px solid #242936;
       border-radius: 8px;
       padding: 2px 4px;
-      gap: 2px;
     }
-
-    .stepper-label {
-      font-size: 13px;
-      color: #717c91;
-      padding-left: 6px;
-    }
-
+    .stepper-label { font-size: 13px; color: #717c91; padding-left: 6px; }
     .stepper-btn {
-      width: 32px;
-      height: 32px;
-      padding: 0;
+      width: 32px; height: 32px;
       font-size: 18px;
       border: none;
       background: transparent;
       color: #e2e8f0;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
     }
-
-    .stepper-btn:active {
-      background: #232836;
-    }
-
-    .stepper-value {
-      min-width: 40px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 600;
-      color: #f1f5f9;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* 본문 프롬프터 뷰포트 */
+    .stepper-value { min-width: 40px; text-align: center; font-size: 14px; font-weight: 600; color: #f1f5f9; }
     #prompter-container {
       flex: 1;
       overflow-y: scroll;
@@ -149,137 +74,24 @@
       scrollbar-width: none;
       position: relative;
     }
-
-    #prompter-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    #prompter-text {
-      font-size: var(--font-size);
-      line-height: var(--line-height);
-      word-break: keep-all;
-      word-wrap: break-word;
-    }
-
-    .word {
-      display: inline;
-      padding: 2px 3px;
-      border-radius: 4px;
-      transition: color 0.15s ease, background 0.15s ease;
-      cursor: pointer;
-    }
-
-    .word.read {
-      color: var(--read-color);
-    }
-
-    .word.active {
-      color: var(--text-highlight);
-      font-weight: 700;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .word.upcoming {
-      color: var(--text-muted);
-    }
-
-    /* 플로팅 스크롤바 */
+    #prompter-container::-webkit-scrollbar { display: none; }
+    #prompter-text { font-size: var(--font-size); line-height: var(--line-height); word-break: keep-all; }
+    .word { display: inline; padding: 2px 3px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+    .word.read { color: var(--read-color); }
+    .word.active { color: var(--text-highlight); font-weight: 700; background: rgba(255,255,255,0.1); }
+    .word.upcoming { color: var(--text-muted); }
     #floating-scrollbar {
-      position: absolute;
-      right: 6px;
-      top: 64px;
-      bottom: 38px;
-      width: 32px;
-      z-index: 15;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
+      position: absolute; right: 6px; top: 64px; bottom: 38px; width: 32px;
+      z-index: 15; opacity: 0; pointer-events: none; transition: opacity 0.3s;
     }
-
-    #floating-scrollbar.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
+    #floating-scrollbar.visible { opacity: 1; pointer-events: auto; }
     #scroll-thumb {
-      position: absolute;
-      top: 0;
-      right: 8px;
-      width: 6px;
-      background: #475569;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: width 0.2s, background 0.2s;
+      position: absolute; top: 0; right: 8px; width: 6px; background: #475569;
+      border-radius: 4px; cursor: pointer;
     }
-
-    #floating-scrollbar:active #scroll-thumb,
-    #scroll-thumb:active {
-      width: 10px;
-      background: #ffffff;
-    }
-
-    /* 원고 수정 모달 */
-    #editor-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.88);
-      z-index: 30;
-      padding: 24px;
-      flex-direction: column;
-    }
-
-    #editor-modal.open {
-      display: flex;
-    }
-
-    textarea {
-      flex: 1;
-      background: #111318;
-      color: #f8fafc;
-      border: 1px solid #2a3140;
-      border-radius: 8px;
-      padding: 16px;
-      font-size: 18px;
-      line-height: 1.6;
-      resize: none;
-      outline: none;
-      margin-bottom: 16px;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    .modal-btn {
-      padding: 10px 20px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      border: 1px solid #333d52;
-      background: #1e2330;
-      color: #e2e8f0;
-    }
-
-    .modal-btn.primary {
-      background: #ffffff;
-      border-color: #ffffff;
-      color: #000000;
-    }
-
-    /* 하단 상태바 */
     #status-bar {
-      padding: 8px 20px;
-      font-size: 13px;
-      background: #090a0e;
-      color: #555f73;
-      display: flex;
-      justify-content: space-between;
-      border-top: 1px solid #181b24;
-      z-index: 10;
+      padding: 8px 20px; font-size: 13px; background: #090a0e; color: #555f73;
+      display: flex; justify-content: space-between; border-top: 1px solid #181b24;
     }
   </style>
 </head>
@@ -287,7 +99,7 @@
 
   <header>
     <div class="controls-group">
-      <button id="btn-toggle" class="icon-btn" title="음성 인식 시작" disabled>
+      <button id="btn-toggle" class="icon-btn">
         <svg id="icon-mic" viewBox="0 0 24 24">
           <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
           <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -298,14 +110,7 @@
           <rect x="4" y="4" width="16" height="16" rx="2"></rect>
         </svg>
       </button>
-
-      <button id="btn-edit" class="icon-btn" title="원고 수정">
-        <svg viewBox="0 0 24 24">
-          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      </button>
     </div>
-    
     <div class="controls-group">
       <div class="stepper-group">
         <span class="stepper-label">크기</span>
@@ -313,7 +118,6 @@
         <span class="stepper-value" id="val-font-size">36</span>
         <button class="stepper-btn" id="btn-font-inc">+</button>
       </div>
-
       <div class="stepper-group">
         <span class="stepper-label">줄간격</span>
         <button class="stepper-btn" id="btn-line-dec">−</button>
@@ -332,47 +136,20 @@
   </div>
 
   <div id="status-bar">
-    <span id="speech-preview">온디바이스 AI 모델 로딩 중...</span>
+    <span id="speech-preview">준비됨</span>
     <span id="progress-counter">0 / 0</span>
   </div>
 
-  <div id="editor-modal">
-    <textarea id="script-input" placeholder="발표 원고를 입력하세요..."></textarea>
-    <div class="modal-actions">
-      <button id="btn-cancel" class="modal-btn">취소</button>
-      <button id="btn-save" class="modal-btn primary">적용</button>
-    </div>
-  </div>
-
-  <!-- Transformers.js 라이브러리 (WebAssembly 온디바이스 신경망 엔진) -->
-  <script type="module">
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
-
-    // 로컬 브라우저 캐시 우선 사용 설정
-    env.allowLocalModels = false;
-    env.useBrowserCache = true;
-
-    const DEFAULT_SCRIPT = `안녕하세요. 온디바이스 음성인식 프롬프터입니다.
-이 시스템은 외부 음성 서버와 통신하지 않고 태블릿 내부의 브라우저에서 신경망 모델을 직접 실행합니다.
-네트워크 지연 없이 기기 자체의 연산으로 음성을 추론하기 때문에 반응 속도가 훨씬 즉각적입니다.
-상단의 마이크 아이콘을 터치하여 바로 프롬프터를 시작할 수 있습니다.
-Yslide와 연동 시 슬라이드 노트 원고가 이 화면으로 즉시 주입되어 동작합니다.`;
+  <script>
+    const DEFAULT_SCRIPT = `안녕하세요. 안드로이드 온디바이스 전용 프롬프터입니다.
+갤럭시 탭 S9의 자체 오프라인 음성 인식 엔진과 연동되어 딜레이 없이 실시간으로 단어를 추적합니다.
+클라우드 서버 통신 없이 기기 내부의 One UI 음성 엔진이 직접 단어를 감지합니다.`;
 
     const state = {
       words: [],
       currentIndex: 0,
       targetScrollTop: 0,
-      isListening: false,
-      isDraggingThumb: false,
-      transcriber: null,
-      audioContext: null,
-      mediaStream: null,
-      processor: null,
-      audioBuffer: [],
-      isProcessingAudio: false,
-      fontSize: 36,
-      lineHeight: 2.1,
-      fadeTimer: null
+      isListening: false
     };
 
     const container = document.getElementById('prompter-container');
@@ -380,23 +157,8 @@ Yslide와 연동 시 슬라이드 노트 원고가 이 화면으로 즉시 주�
     const btnToggle = document.getElementById('btn-toggle');
     const iconMic = document.getElementById('icon-mic');
     const iconStop = document.getElementById('icon-stop');
-    const btnEdit = document.getElementById('btn-edit');
-    const modal = document.getElementById('editor-modal');
-    const scriptInput = document.getElementById('script-input');
-    const btnSave = document.getElementById('btn-save');
-    const btnCancel = document.getElementById('btn-cancel');
     const speechPreview = document.getElementById('speech-preview');
     const progressCounter = document.getElementById('progress-counter');
-
-    const floatingScrollbar = document.getElementById('floating-scrollbar');
-    const scrollThumb = document.getElementById('scroll-thumb');
-
-    const btnFontDec = document.getElementById('btn-font-dec');
-    const btnFontInc = document.getElementById('btn-font-inc');
-    const valFontSize = document.getElementById('val-font-size');
-    const btnLineDec = document.getElementById('btn-line-dec');
-    const btnLineInc = document.getElementById('btn-line-inc');
-    const valLineHeight = document.getElementById('val-line-height');
 
     function normalizeWord(str) {
       return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'<>]/g, "").trim().toLowerCase();
@@ -405,21 +167,12 @@ Yslide와 연동 시 슬라이드 노트 원고가 이 화면으로 즉시 주�
     function parseScript(rawText) {
       const tokens = [];
       const lines = rawText.split('\n');
-
       lines.forEach((line, lineIdx) => {
         const wordsInLine = line.trim().split(/\s+/);
         wordsInLine.forEach((w) => {
-          if (w.length > 0) {
-            tokens.push({
-              raw: w,
-              clean: normalizeWord(w),
-              isLineBreak: false
-            });
-          }
+          if (w.length > 0) tokens.push({ raw: w, clean: normalizeWord(w), isLineBreak: false });
         });
-        if (lineIdx < lines.length - 1 && tokens.length > 0) {
-          tokens[tokens.length - 1].isLineBreak = true;
-        }
+        if (lineIdx < lines.length - 1 && tokens.length > 0) tokens[tokens.length - 1].isLineBreak = true;
       });
       return tokens;
     }
@@ -431,348 +184,92 @@ Yslide와 연동 시 슬라이드 노트 원고가 이 화면으로 즉시 주�
         span.className = 'word upcoming';
         span.innerText = token.raw + ' ';
         span.dataset.index = idx;
-
-        span.addEventListener('click', () => {
-          setWordIndex(idx);
-        });
-
+        span.addEventListener('click', () => setWordIndex(idx));
         textContainer.appendChild(span);
-
         if (token.isLineBreak) {
           textContainer.appendChild(document.createElement('br'));
           textContainer.appendChild(document.createElement('br'));
         }
       });
-
       setWordIndex(0);
-      updateTargetScroll();
-      updateThumbPosition();
     }
 
     function setWordIndex(idx) {
       if (idx < 0 || idx >= state.words.length) return;
       state.currentIndex = idx;
-
       const spans = textContainer.querySelectorAll('.word');
       spans.forEach((s, i) => {
-        if (i < idx) {
-          s.className = 'word read';
-        } else if (i === idx) {
-          s.className = 'word active';
-        } else {
-          s.className = 'word upcoming';
-        }
+        if (i < idx) s.className = 'word read';
+        else if (i === idx) s.className = 'word active';
+        else s.className = 'word upcoming';
       });
-
       progressCounter.innerText = `${state.currentIndex + 1} / ${state.words.length}`;
-      if (!state.isDraggingThumb) {
-        updateTargetScroll();
-      }
+      updateTargetScroll();
     }
 
     function updateTargetScroll() {
       const activeSpan = textContainer.querySelector(`.word[data-index="${state.currentIndex}"]`);
       if (!activeSpan) return;
-
-      const spanRect = activeSpan.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const currentScroll = container.scrollTop;
-      const offset = spanRect.top - containerRect.top;
-      const targetFocusLine = container.clientHeight * 0.25;
-
-      state.targetScrollTop = currentScroll + (offset - targetFocusLine);
+      const offset = activeSpan.getBoundingClientRect().top - container.getBoundingClientRect().top;
+      const targetFocusLine = container.clientHeight * 0.25; // 상단 25% 지점
+      state.targetScrollTop = container.scrollTop + (offset - targetFocusLine);
     }
 
     function smoothScrollLoop() {
-      if (!state.isDraggingThumb) {
-        const diff = state.targetScrollTop - container.scrollTop;
-        if (Math.abs(diff) > 0.5) {
-          container.scrollTop += diff * 0.1;
-        }
-      }
+      const diff = state.targetScrollTop - container.scrollTop;
+      if (Math.abs(diff) > 0.5) container.scrollTop += diff * 0.1;
       requestAnimationFrame(smoothScrollLoop);
     }
     requestAnimationFrame(smoothScrollLoop);
 
-    function showScrollbar() {
-      floatingScrollbar.classList.add('visible');
-      clearTimeout(state.fadeTimer);
-      if (!state.isDraggingThumb) {
-        state.fadeTimer = setTimeout(() => {
-          floatingScrollbar.classList.remove('visible');
-        }, 1500);
-      }
-    }
-
-    function updateThumbPosition() {
-      const scrollHeight = container.scrollHeight;
-      const clientHeight = container.clientHeight;
-      const trackHeight = floatingScrollbar.clientHeight;
-
-      if (scrollHeight <= clientHeight) {
-        scrollThumb.style.display = 'none';
-        return;
-      }
-      scrollThumb.style.display = 'block';
-
-      const thumbHeight = Math.max(40, (clientHeight / scrollHeight) * trackHeight);
-      scrollThumb.style.height = `${thumbHeight}px`;
-
-      const maxScrollTop = scrollHeight - clientHeight;
-      const currentScrollRatio = container.scrollTop / maxScrollTop;
-      const maxThumbTop = trackHeight - thumbHeight;
-      const thumbTop = currentScrollRatio * maxThumbTop;
-
-      scrollThumb.style.top = `${thumbTop}px`;
-    }
-
-    container.addEventListener('scroll', () => {
-      if (!state.isDraggingThumb) {
-        updateThumbPosition();
-        showScrollbar();
-      }
-    });
-
-    function handleThumbMove(clientY) {
-      const trackRect = floatingScrollbar.getBoundingClientRect();
-      const trackHeight = floatingScrollbar.clientHeight;
-      const thumbHeight = scrollThumb.offsetHeight;
-      const maxThumbTop = trackHeight - thumbHeight;
-
-      let relativeY = clientY - trackRect.top - (thumbHeight / 2);
-      relativeY = Math.max(0, Math.min(maxThumbTop, relativeY));
-
-      const ratio = relativeY / maxThumbTop;
-      const maxScrollTop = container.scrollHeight - container.clientHeight;
-      
-      container.scrollTop = ratio * maxScrollTop;
-      state.targetScrollTop = container.scrollTop;
-      scrollThumb.style.top = `${relativeY}px`;
-    }
-
-    function onPointerDown(e) {
-      state.isDraggingThumb = true;
-      showScrollbar();
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      handleThumbMove(clientY);
-
-      const onPointerMove = (moveEvent) => {
-        const y = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-        handleThumbMove(y);
-      };
-
-      const onPointerUp = () => {
-        state.isDraggingThumb = false;
-        showScrollbar();
-        window.removeEventListener('mousemove', onPointerMove);
-        window.removeEventListener('mouseup', onPointerUp);
-        window.removeEventListener('touchmove', onPointerMove);
-        window.removeEventListener('touchend', onPointerUp);
-      };
-
-      window.addEventListener('mousemove', onPointerMove);
-      window.addEventListener('mouseup', onPointerUp);
-      window.addEventListener('touchmove', onPointerMove, { passive: false });
-      window.addEventListener('touchend', onPointerUp);
-    }
-
-    floatingScrollbar.addEventListener('mousedown', onPointerDown);
-    floatingScrollbar.addEventListener('touchstart', onPointerDown, { passive: false });
-
-    // 실시간 음성 매칭 엔진
-    function processRealtimeSpeech(transcript) {
-      if (!transcript) return;
-      const incomingWords = transcript.trim().split(/\s+/).map(normalizeWord).filter(Boolean);
+    // 네이티브 앱에서 실시간 단어를 쏴줄 때 호출되는 글로벌 함수
+    window.onNativeSpeechResult = function(recognizedText) {
+      speechPreview.innerText = `🗣️ ${recognizedText.slice(-20)}`;
+      const incomingWords = recognizedText.trim().split(/\s+/).map(normalizeWord).filter(Boolean);
       if (incomingWords.length === 0) return;
 
       const lastWord = incomingWords[incomingWords.length - 1];
-      const lookAheadRange = 14;
       const start = Math.max(0, state.currentIndex - 2);
-      const end = Math.min(state.words.length, state.currentIndex + lookAheadRange);
+      const end = Math.min(state.words.length, state.currentIndex + 14);
 
       for (let i = start; i < end; i++) {
         const targetClean = state.words[i].clean;
-        if (targetClean === lastWord || (lastWord.length >= 2 && (targetClean.includes(lastWord) || lastWord.includes(targetClean)))) {
+        if (targetClean === lastWord || (lastWord.length >= 2 && targetClean.includes(lastWord))) {
           setWordIndex(i);
           return;
         }
       }
-    }
+    };
 
-    // --- 온디바이스 Whisper AI 모델 초기화 ---
-    async function initOnDeviceWhisper() {
-      try {
-        speechPreview.innerText = "온디바이스 AI 모델 준비 중 (최초 1회 캐싱)...";
-        // 초경량 온디바이스 모델 사용 (Xenova/whisper-tiny)
-        state.transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny', {
-          quantized: true,
-          progress_callback: (p) => {
-            if (p.status === 'progress') {
-              speechPreview.innerText = `모델 다운로드: ${Math.round(p.progress || 0)}%`;
-            }
-          }
-        });
-        speechPreview.innerText = "온디바이스 준비 완료";
-        btnToggle.disabled = false;
-      } catch (err) {
-        console.error("모델 로드 실패:", err);
-        speechPreview.innerText = "온디바이스 모델 로드 실패";
-      }
-    }
-
-    // 마이크 스트림 16kHz PCM 캡처 및 로컬 신경망 추론 루프
-    async function startListening() {
-      if (!state.transcriber) return;
-      try {
-        state.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        state.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        
-        const source = state.audioContext.createMediaStreamSource(state.mediaStream);
-        state.processor = state.audioContext.createScriptProcessor(4096, 1, 1);
-
-        state.audioBuffer = [];
-        state.processor.onaudioprocess = async (e) => {
-          if (!state.isListening) return;
-          const channelData = e.inputBuffer.getChannelData(0);
-          state.audioBuffer.push(...channelData);
-
-          // 1.2초(약 19,200 샘플) 분량의 오디오가 모이면 실시간 추론 진행
-          if (state.audioBuffer.length >= 19200 && !state.isProcessingAudio) {
-            state.isProcessingAudio = true;
-            const inputChunk = Float32Array.from(state.audioBuffer);
-            // 다음 인식을 위해 0.3초(4800 샘플) 오버랩 남기고 슬라이딩
-            state.audioBuffer = state.audioBuffer.slice(-4800);
-
-            try {
-              const output = await state.transcriber(inputChunk, {
-                language: 'korean',
-                task: 'transcribe',
-                chunk_length_s: 30,
-                stride_length_s: 5
-              });
-              
-              const text = output.text ? output.text.trim() : '';
-              if (text) {
-                speechPreview.innerText = `🤖 ${text.slice(-25)}`;
-                processRealtimeSpeech(text);
-              }
-            } catch (err) {
-              console.warn("추론 스킵:", err);
-            } finally {
-              state.isProcessingAudio = false;
-            }
-          }
-        };
-
-        source.connect(state.processor);
-        state.processor.connect(state.audioContext.destination);
-
-        state.isListening = true;
+    // 버튼 동작: 안드로이드 네이티브 앱의 브릿지 호출
+    btnToggle.addEventListener('click', () => {
+      state.isListening = !state.isListening;
+      if (state.isListening) {
         btnToggle.classList.add('active');
         iconMic.style.display = 'none';
         iconStop.style.display = 'block';
-        speechPreview.innerText = "온디바이스 추론 중...";
-      } catch (err) {
-        console.error("마이크 접근 실패:", err);
-        speechPreview.innerText = "마이크 접근 권한 오류";
+        if (window.AndroidBridge) {
+          window.AndroidBridge.startSpeechRecognition();
+        }
+      } else {
+        btnToggle.classList.remove('active');
+        iconMic.style.display = 'block';
+        iconStop.style.display = 'none';
+        if (window.AndroidBridge) {
+          window.AndroidBridge.stopSpeechRecognition();
+        }
       }
-    }
-
-    function stopListening() {
-      state.isListening = false;
-      if (state.processor) {
-        state.processor.disconnect();
-        state.processor = null;
-      }
-      if (state.audioContext) {
-        state.audioContext.close();
-        state.audioContext = null;
-      }
-      if (state.mediaStream) {
-        state.mediaStream.getTracks().forEach(track => track.stop());
-        state.mediaStream = null;
-      }
-
-      btnToggle.classList.remove('active');
-      iconMic.style.display = 'block';
-      iconStop.style.display = 'none';
-      speechPreview.innerText = "정지됨";
-    }
-
-    function setFontSize(newVal) {
-      state.fontSize = Math.min(64, Math.max(20, newVal));
-      valFontSize.innerText = state.fontSize;
-      document.documentElement.style.setProperty('--font-size', `${state.fontSize}px`);
-      updateTargetScroll();
-      updateThumbPosition();
-    }
-
-    function setLineHeight(newVal) {
-      state.lineHeight = Math.min(3.2, Math.max(1.4, parseFloat(newVal.toFixed(1))));
-      valLineHeight.innerText = state.lineHeight.toFixed(1);
-      document.documentElement.style.setProperty('--line-height', state.lineHeight);
-      updateTargetScroll();
-      updateThumbPosition();
-    }
-
-    btnFontDec.addEventListener('click', () => setFontSize(state.fontSize - 2));
-    btnFontInc.addEventListener('click', () => setFontSize(state.fontSize + 2));
-    btnLineDec.addEventListener('click', () => setLineHeight(state.lineHeight - 0.1));
-    btnLineInc.addEventListener('click', () => setLineHeight(state.lineHeight + 0.1));
-
-    btnToggle.addEventListener('click', () => {
-      if (state.isListening) stopListening();
-      else startListening();
     });
 
-    btnEdit.addEventListener('click', () => {
-      scriptInput.value = state.words.map(w => w.raw + (w.isLineBreak ? '\n' : ' ')).join('').trim();
-      modal.classList.add('open');
-    });
-
-    btnSave.addEventListener('click', () => {
-      const val = scriptInput.value.trim();
-      if (val) {
-        state.words = parseScript(val);
-        renderTokens();
-      }
-      modal.classList.remove('open');
-    });
-
-    btnCancel.addEventListener('click', () => {
-      modal.classList.remove('open');
-    });
-
-    window.addEventListener('resize', () => {
-      updateTargetScroll();
-      updateThumbPosition();
-    });
-
-    // 외부 API (Yslide 연동 인터페이스)
-    window.YslidePrompter = {
-      loadScript: function(scriptText) {
-        if (!scriptText) return;
-        state.words = parseScript(scriptText);
-        renderTokens();
-        speechPreview.innerText = "원고 동기화 완료";
-      },
-      start: startListening,
-      stop: stopListening,
-      setIndex: setWordIndex
+    // 외부 스크립트 주입 인터페이스
+    window.loadScriptFromYslide = function(text) {
+      state.words = parseScript(text);
+      renderTokens();
     };
 
-    window.addEventListener('message', (event) => {
-      if (!event.data) return;
-      if (event.data.type === 'SET_PROMPTER_SCRIPT') {
-        window.YslidePrompter.loadScript(event.data.script);
-      }
-    });
-
-    // 시작
     window.addEventListener('DOMContentLoaded', () => {
       state.words = parseScript(DEFAULT_SCRIPT);
       renderTokens();
-      initOnDeviceWhisper();
     });
   </script>
 </body>
