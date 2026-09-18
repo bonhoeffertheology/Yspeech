@@ -11,7 +11,7 @@
       --text-highlight: #ffffff;
       --accent-color: #3b82f6;
       --read-color: #1e293b;
-      --font-size: 34px;
+      --font-size: 36px;
       --line-height: 2.1;
     }
 
@@ -32,13 +32,13 @@
       overflow: hidden;
     }
 
-    /* 헤더 컨트롤 바 */
+    /* 상단 헤더 */
     header {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 24px;
+      padding: 10px 20px;
       background: #141721;
       border-bottom: 1px solid #232936;
       gap: 12px;
@@ -48,26 +48,29 @@
     .controls-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     button {
       background: #1e2330;
       color: #e2e8f0;
       border: 1px solid #333d52;
-      padding: 10px 18px;
+      padding: 8px 14px;
       font-size: 15px;
       font-weight: 600;
       border-radius: 8px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
+      justify-content: center;
+      transition: all 0.15s ease;
+      user-select: none;
     }
 
     button:active {
-      transform: scale(0.97);
+      transform: scale(0.95);
+      background: #2b3347;
     }
 
     button.primary {
@@ -88,25 +91,49 @@
       100% { opacity: 1; }
     }
 
-    .slider-container {
-      display: flex;
+    /* 숫자 스테퍼 (크기, 줄간격) */
+    .stepper-group {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      background: #0d0f17;
+      border: 1px solid #283042;
+      border-radius: 8px;
+      padding: 2px 4px;
+      gap: 4px;
+    }
+
+    .stepper-label {
+      font-size: 13px;
       color: #94a3b8;
+      padding-left: 6px;
+    }
+
+    .stepper-btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+      border-radius: 6px;
+    }
+
+    .stepper-value {
+      min-width: 44px;
+      text-align: center;
       font-size: 14px;
+      font-weight: bold;
+      color: #e2e8f0;
+      font-variant-numeric: tabular-nums;
     }
 
-    input[type="range"] {
-      cursor: pointer;
-      accent-color: var(--accent-color);
-    }
-
-    /* 스크립트 뷰포트 */
+    /* 본문 프롬프터 영역 */
     #prompter-container {
       flex: 1;
       overflow-y: scroll;
-      padding: 40vh 14vw 60vh 14vw; /* 중앙 시선 정렬용 여백 */
+      /* 상단은 타겟 위치에 맞게 28vh 여백, 하단은 넉넉하게 75vh 여백 */
+      padding: 28vh 14vw 75vh 14vw;
       scrollbar-width: none;
+      position: relative;
     }
 
     #prompter-container::-webkit-scrollbar {
@@ -120,7 +147,7 @@
       word-wrap: break-word;
     }
 
-    /* 단어 단위 스팬 스타일 */
+    /* 단어 토큰 스타일 */
     .word {
       display: inline;
       padding: 2px 3px;
@@ -136,7 +163,7 @@
     .word.active {
       color: var(--text-highlight);
       font-weight: 700;
-      background: rgba(59, 130, 246, 0.2);
+      background: rgba(59, 130, 246, 0.22);
     }
 
     .word.upcoming {
@@ -190,14 +217,25 @@
     <div class="controls-group">
       <button id="btn-toggle" class="primary">🎙️ 인식 시작</button>
       <button id="btn-edit">✏️ 원고 수정</button>
+      <button id="btn-reset">처음으로</button>
     </div>
     
     <div class="controls-group">
-      <div class="slider-container">
-        <label for="font-size">글자 크기</label>
-        <input type="range" id="font-size" min="22" max="64" value="34" />
+      <!-- 글자 크기 스텝퍼 -->
+      <div class="stepper-group">
+        <span class="stepper-label">크기</span>
+        <button class="stepper-btn" id="btn-font-dec">−</button>
+        <span class="stepper-value" id="val-font-size">36</span>
+        <button class="stepper-btn" id="btn-font-inc">+</button>
       </div>
-      <button id="btn-reset">처음으로</button>
+
+      <!-- 줄 간격 스텝퍼 -->
+      <div class="stepper-group">
+        <span class="stepper-label">줄간격</span>
+        <button class="stepper-btn" id="btn-line-dec">−</button>
+        <span class="stepper-value" id="val-line-height">2.1</span>
+        <button class="stepper-btn" id="btn-line-inc">+</button>
+      </div>
     </div>
   </header>
 
@@ -220,20 +258,20 @@
   </div>
 
   <script>
-    const DEFAULT_SCRIPT = `안녕하세요. 오늘 프롬프터 시스템 시연을 시작하겠습니다.
-엘가토 프롬프터처럼 말을 시작하면 단어의 흐름에 맞추어 스크롤이 부드럽고 자연스럽게 실시간으로 올라갑니다.
-말을 끝까지 맺지 않아도 중간 발화 내용을 실시간으로 분석하여 목표 위치를 따라갑니다.
-만약 말을 조금 더 빨리 하더라도 스크립트가 유연하게 가속하여 발표자의 속도를 쫓아옵니다.
-태블릿 터치를 통해 언제든지 읽고 싶은 위치를 직접 선택하여 이동할 수도 있습니다.
-준비되셨다면 원고 수정 버튼을 눌러 실제 발표 원고를 입력해 보세요.`;
+    const DEFAULT_SCRIPT = `안녕하세요. 오늘 발표를 시작하겠습니다.
+이제 프롬프터의 시선 기준선이 화면 가운데보다 15% 위인 상단 25% 지점에 배치됩니다.
+덕분에 말을 조금 빠르게 진행하더라도 아래에 읽을 원고를 훨씬 넓은 시야로 미리 확인할 수 있습니다.
+화면 상단의 플러스 마이너스 버튼을 눌러 글자 크기와 줄 간격을 태블릿 화면에 가장 편안한 상태로 맞춰보세요.
+인식 도중 언제든 원하는 단어를 터치하여 즉시 위치를 이동할 수도 있습니다.`;
 
     const state = {
-      words: [],            // 원본 단어 객체 배열
+      words: [],
       currentIndex: 0,
       targetScrollTop: 0,
       isListening: false,
       recognition: null,
-      keepAliveTimer: null
+      fontSize: 36,
+      lineHeight: 2.1
     };
 
     const container = document.getElementById('prompter-container');
@@ -247,14 +285,20 @@
     const btnCancel = document.getElementById('btn-cancel');
     const speechPreview = document.getElementById('speech-preview');
     const progressCounter = document.getElementById('progress-counter');
-    const fontSizeSlider = document.getElementById('font-size');
 
-    // 특수문자 제거 후 순수 단어 토큰 추출
+    // UI 스텝퍼 요소
+    const btnFontDec = document.getElementById('btn-font-dec');
+    const btnFontInc = document.getElementById('btn-font-inc');
+    const valFontSize = document.getElementById('val-font-size');
+
+    const btnLineDec = document.getElementById('btn-line-dec');
+    const btnLineInc = document.getElementById('btn-line-inc');
+    const valLineHeight = document.getElementById('val-line-height');
+
     function normalizeWord(str) {
       return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'<>]/g, "").trim().toLowerCase();
     }
 
-    // 텍스트 파싱 (단어 단위 분할 및 줄바꿈 보존)
     function parseScript(rawText) {
       const tokens = [];
       const lines = rawText.split('\n');
@@ -285,7 +329,6 @@
         span.innerText = token.raw + ' ';
         span.dataset.index = idx;
 
-        // 터치/클릭 즉각 동기화
         span.addEventListener('click', () => {
           setWordIndex(idx);
         });
@@ -321,7 +364,7 @@
       updateTargetScroll();
     }
 
-    // 활성 단어의 위치를 읽어 목표 스크롤 위치 계산
+    // 목표 스크롤 계산: 가운데(50%)보다 15% 더 위인 [상단 25% 지점]에 맞춤
     function updateTargetScroll() {
       const activeSpan = textContainer.querySelector(`.word[data-index="${state.currentIndex}"]`);
       if (!activeSpan) return;
@@ -329,26 +372,26 @@
       const spanRect = activeSpan.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
       
-      // 현재 컨테이너 스크롤 값 + 대상 엘리먼트의 상대 오프셋 - 화면 중앙점
       const currentScroll = container.scrollTop;
       const offset = spanRect.top - containerRect.top;
-      const centerLine = container.clientHeight * 0.38; // 상단 38% 지점에 시선 맞춤
+      
+      // 화면 높이의 25%를 기준 라인으로 삼아 아래쪽 원고 시야를 75% 확보
+      const targetFocusLine = container.clientHeight * 0.25; 
 
-      state.targetScrollTop = currentScroll + (offset - centerLine);
+      state.targetScrollTop = currentScroll + (offset - targetFocusLine);
     }
 
-    // 선형 보간을 활용한 부드러운 스크롤 루프 (Lerp Scroll)
+    // 부드러운 스크롤 애니메이션 루프
     function smoothScrollLoop() {
       const diff = state.targetScrollTop - container.scrollTop;
       if (Math.abs(diff) > 0.5) {
-        // 프레임당 8%씩 완만하게 목표치로 접근
         container.scrollTop += diff * 0.08;
       }
       requestAnimationFrame(smoothScrollLoop);
     }
     requestAnimationFrame(smoothScrollLoop);
 
-    // 실시간 음성 단어 매칭 엔진
+    // 실시간 음성 매칭 엔진
     function processRealtimeSpeech(transcript) {
       if (!transcript) return;
       
@@ -357,15 +400,13 @@
 
       const lastWord = incomingWords[incomingWords.length - 1];
 
-      // 현재 읽는 위치를 기준으로 앞뒤 8개 단어 반경 탐색
+      // 현재 인덱스 기준 앞뒤 반경 내에서 탐색
       const lookAheadRange = 12;
       const start = Math.max(0, state.currentIndex - 2);
       const end = Math.min(state.words.length, state.currentIndex + lookAheadRange);
 
       for (let i = start; i < end; i++) {
         const targetClean = state.words[i].clean;
-        
-        // 끝말 일치 혹은 포함 관계 탐색
         if (targetClean === lastWord || (lastWord.length >= 2 && targetClean.includes(lastWord))) {
           setWordIndex(i);
           return;
@@ -373,39 +414,34 @@
       }
     }
 
-    // Web Speech API 초기화
+    // Web Speech API
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        speechPreview.innerText = "Web Speech API 미지원 브라우저";
+        speechPreview.innerText = "음성 인식을 지원하지 않는 브라우저입니다.";
         btnToggle.disabled = true;
         return;
       }
 
       const rec = new SpeechRecognition();
       rec.continuous = true;
-      rec.interimResults = true; // 실시간 발화 캐치
+      rec.interimResults = true;
       rec.lang = 'ko-KR';
 
       rec.onresult = (event) => {
         let interimText = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const part = event.results[i][0].transcript;
-          interimText += part;
+          interimText += event.results[i][0].transcript;
         }
-        
         speechPreview.innerText = `🗣️ ${interimText.slice(-25)}`;
-        // 중간 발화 도중에도 즉시 위치 갱신
         processRealtimeSpeech(interimText);
       };
 
-      // 팝업 없이 조용하게 오류 처리 및 세션 유지
       rec.onerror = (e) => {
         console.warn("Speech API 상태:", e.error);
       };
 
       rec.onend = () => {
-        // 사용자가 명시적으로 정지하지 않았다면 조용히 재연결
         if (state.isListening) {
           try {
             rec.start();
@@ -439,7 +475,30 @@
       speechPreview.innerText = "정지됨";
     }
 
-    // 이벤트 리스너
+    // 스타일 제어 함수
+    function setFontSize(newVal) {
+      state.fontSize = Math.min(64, Math.max(20, newVal));
+      valFontSize.innerText = state.fontSize;
+      document.documentElement.style.setProperty('--font-size', `${state.fontSize}px`);
+      updateTargetScroll();
+    }
+
+    function setLineHeight(newVal) {
+      state.lineHeight = Math.min(3.2, Math.max(1.4, parseFloat(newVal.toFixed(1))));
+      valLineHeight.innerText = state.lineHeight.toFixed(1);
+      document.documentElement.style.setProperty('--line-height', state.lineHeight);
+      updateTargetScroll();
+    }
+
+    // 글자 크기 +/- 버튼
+    btnFontDec.addEventListener('click', () => setFontSize(state.fontSize - 2));
+    btnFontInc.addEventListener('click', () => setFontSize(state.fontSize + 2));
+
+    // 줄 간격 +/- 버튼
+    btnLineDec.addEventListener('click', () => setLineHeight(state.lineHeight - 0.1));
+    btnLineInc.addEventListener('click', () => setLineHeight(state.lineHeight + 0.1));
+
+    // 버튼 이벤트 리스너
     btnToggle.addEventListener('click', () => {
       if (state.isListening) stopListening();
       else startListening();
@@ -467,16 +526,11 @@
       modal.classList.remove('open');
     });
 
-    fontSizeSlider.addEventListener('input', (e) => {
-      document.documentElement.style.setProperty('--font-size', `${e.target.value}px`);
-      updateTargetScroll();
-    });
-
     window.addEventListener('resize', () => {
       updateTargetScroll();
     });
 
-    // 시작
+    // 시작 초기화
     window.addEventListener('DOMContentLoaded', () => {
       state.words = parseScript(DEFAULT_SCRIPT);
       renderTokens();
