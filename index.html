@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Smart Voice Prompter</title>
+  <title>Yspeech - Smart Prompter</title>
   <style>
     :root {
       --bg-color: #0b0c10;
@@ -30,12 +30,12 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;
     }
 
-    /* 상단 헤더 */
+    /* 상단 컨트롤 헤더 */
     header {
       display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
       padding: 10px 20px;
@@ -49,37 +49,37 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      flex-wrap: wrap;
     }
 
-    button {
-      background: #1e2330;
-      color: #e2e8f0;
-      border: 1px solid #333d52;
-      padding: 8px 14px;
-      font-size: 15px;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
+    /* 아이콘 전용 버튼 스타일 */
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      border: 1px solid #333d52;
+      background: #1e2330;
+      color: #e2e8f0;
       transition: all 0.15s ease;
+      font-size: 20px;
       user-select: none;
     }
 
-    button:active {
-      transform: scale(0.95);
+    .icon-btn:active {
+      transform: scale(0.92);
       background: #2b3347;
     }
 
-    button.primary {
+    .icon-btn.primary {
       background: var(--accent-color);
       border-color: var(--accent-color);
-      color: #fff;
     }
 
-    button.active {
+    .icon-btn.active {
       background: #ef4444;
       border-color: #ef4444;
       animation: pulse 1.6s infinite;
@@ -91,7 +91,7 @@
       100% { opacity: 1; }
     }
 
-    /* 숫자 스테퍼 (크기, 줄간격) */
+    /* 수치 조절 스텝퍼 */
     .stepper-group {
       display: inline-flex;
       align-items: center;
@@ -99,7 +99,7 @@
       border: 1px solid #283042;
       border-radius: 8px;
       padding: 2px 4px;
-      gap: 4px;
+      gap: 2px;
     }
 
     .stepper-label {
@@ -113,12 +113,22 @@
       height: 32px;
       padding: 0;
       font-size: 18px;
-      line-height: 1;
-      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .stepper-btn:active {
+      background: #1e293b;
     }
 
     .stepper-value {
-      min-width: 44px;
+      min-width: 40px;
       text-align: center;
       font-size: 14px;
       font-weight: bold;
@@ -126,12 +136,11 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* 본문 프롬프터 영역 */
+    /* 본문 프롬프터 뷰포트 */
     #prompter-container {
       flex: 1;
       overflow-y: scroll;
-      /* 상단은 타겟 위치에 맞게 28vh 여백, 하단은 넉넉하게 75vh 여백 */
-      padding: 28vh 14vw 75vh 14vw;
+      padding: 25vh 14vw 75vh 14vw;
       scrollbar-width: none;
       position: relative;
     }
@@ -147,7 +156,7 @@
       word-wrap: break-word;
     }
 
-    /* 단어 토큰 스타일 */
+    /* 단어 토큰 */
     .word {
       display: inline;
       padding: 2px 3px;
@@ -170,13 +179,48 @@
       color: var(--text-muted);
     }
 
+    /* 태블릿용 플로팅 스크롤바 (Fast-Scroll Track & Thumb) */
+    #floating-scrollbar {
+      position: absolute;
+      right: 6px;
+      top: 64px;
+      bottom: 38px;
+      width: 32px; /* 터치하기 편한 충분한 영역 */
+      z-index: 15;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    #floating-scrollbar.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #scroll-thumb {
+      position: absolute;
+      top: 0;
+      right: 8px;
+      width: 8px;
+      background: #475569;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: width 0.2s, background 0.2s;
+    }
+
+    #floating-scrollbar:active #scroll-thumb,
+    #scroll-thumb:active {
+      width: 14px;
+      background: var(--accent-color);
+    }
+
     /* 원고 수정 모달 */
     #editor-modal {
       display: none;
       position: fixed;
       inset: 0;
       background: rgba(0, 0, 0, 0.85);
-      z-index: 20;
+      z-index: 30;
       padding: 24px;
       flex-direction: column;
     }
@@ -199,15 +243,39 @@
       margin-bottom: 16px;
     }
 
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid #334155;
+      background: #1e2330;
+      color: #e2e8f0;
+    }
+
+    .modal-btn.primary {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      color: #fff;
+    }
+
     /* 하단 상태바 */
     #status-bar {
-      padding: 8px 24px;
+      padding: 8px 20px;
       font-size: 13px;
       background: #08090d;
       color: #64748b;
       display: flex;
       justify-content: space-between;
       border-top: 1px solid #161a24;
+      z-index: 10;
     }
   </style>
 </head>
@@ -215,13 +283,13 @@
 
   <header>
     <div class="controls-group">
-      <button id="btn-toggle" class="primary">🎙️ 인식 시작</button>
-      <button id="btn-edit">✏️ 원고 수정</button>
-      <button id="btn-reset">처음으로</button>
+      <!-- 텍스트 없이 아이콘만 배치 -->
+      <button id="btn-toggle" class="icon-btn primary" title="음성 인식 시작">🎙️</button>
+      <button id="btn-edit" class="icon-btn" title="원고 수정">✏️</button>
     </div>
     
     <div class="controls-group">
-      <!-- 글자 크기 스텝퍼 -->
+      <!-- 글자 크기 조절 -->
       <div class="stepper-group">
         <span class="stepper-label">크기</span>
         <button class="stepper-btn" id="btn-font-dec">−</button>
@@ -229,7 +297,7 @@
         <button class="stepper-btn" id="btn-font-inc">+</button>
       </div>
 
-      <!-- 줄 간격 스텝퍼 -->
+      <!-- 줄 간격 조절 -->
       <div class="stepper-group">
         <span class="stepper-label">줄간격</span>
         <button class="stepper-btn" id="btn-line-dec">−</button>
@@ -243,6 +311,11 @@
     <div id="prompter-text"></div>
   </div>
 
+  <!-- 화면 터치/스크롤 시 노출되는 플로팅 스크롤바 -->
+  <div id="floating-scrollbar">
+    <div id="scroll-thumb"></div>
+  </div>
+
   <div id="status-bar">
     <span id="speech-preview">준비됨</span>
     <span id="progress-counter">0 / 0</span>
@@ -251,34 +324,36 @@
   <!-- 원고 수정 창 -->
   <div id="editor-modal">
     <textarea id="script-input" placeholder="발표 원고를 입력하세요..."></textarea>
-    <div style="display:flex; justify-content: flex-end; gap: 12px;">
-      <button id="btn-cancel">취소</button>
-      <button id="btn-save" class="primary">적용하기</button>
+    <div class="modal-actions">
+      <button id="btn-cancel" class="modal-btn">취소</button>
+      <button id="btn-save" class="modal-btn primary">적용</button>
     </div>
   </div>
 
   <script>
     const DEFAULT_SCRIPT = `안녕하세요. 오늘 발표를 시작하겠습니다.
-이제 프롬프터의 시선 기준선이 화면 가운데보다 15% 위인 상단 25% 지점에 배치됩니다.
-덕분에 말을 조금 빠르게 진행하더라도 아래에 읽을 원고를 훨씬 넓은 시야로 미리 확인할 수 있습니다.
-화면 상단의 플러스 마이너스 버튼을 눌러 글자 크기와 줄 간격을 태블릿 화면에 가장 편안한 상태로 맞춰보세요.
-인식 도중 언제든 원하는 단어를 터치하여 즉시 위치를 이동할 수도 있습니다.`;
+상단 버튼은 텍스트 없이 간결한 아이콘으로 구성되었습니다.
+화면을 터치하거나 스크롤하면 오른쪽에 플로팅 스크롤바가 나타납니다.
+핸들을 손가락으로 드래그하면 방대한 양의 원고도 빠르게 이동하여 확인할 수 있습니다.
+또한 이 프로그램은 Yslide와 즉시 연동되도록 인터페이스가 마련되어 있습니다.
+Yslide에서 넘겨받은 스크립트를 곧바로 프롬프터로 띄워 발표를 진행해 보세요.`;
 
     const state = {
       words: [],
       currentIndex: 0,
       targetScrollTop: 0,
       isListening: false,
+      isDraggingThumb: false,
       recognition: null,
       fontSize: 36,
-      lineHeight: 2.1
+      lineHeight: 2.1,
+      fadeTimer: null
     };
 
     const container = document.getElementById('prompter-container');
     const textContainer = document.getElementById('prompter-text');
     const btnToggle = document.getElementById('btn-toggle');
     const btnEdit = document.getElementById('btn-edit');
-    const btnReset = document.getElementById('btn-reset');
     const modal = document.getElementById('editor-modal');
     const scriptInput = document.getElementById('script-input');
     const btnSave = document.getElementById('btn-save');
@@ -286,11 +361,12 @@
     const speechPreview = document.getElementById('speech-preview');
     const progressCounter = document.getElementById('progress-counter');
 
-    // UI 스텝퍼 요소
+    const floatingScrollbar = document.getElementById('floating-scrollbar');
+    const scrollThumb = document.getElementById('scroll-thumb');
+
     const btnFontDec = document.getElementById('btn-font-dec');
     const btnFontInc = document.getElementById('btn-font-inc');
     const valFontSize = document.getElementById('val-font-size');
-
     const btnLineDec = document.getElementById('btn-line-dec');
     const btnLineInc = document.getElementById('btn-line-inc');
     const valLineHeight = document.getElementById('val-line-height');
@@ -343,6 +419,7 @@
 
       setWordIndex(0);
       updateTargetScroll();
+      updateThumbPosition();
     }
 
     function setWordIndex(idx) {
@@ -361,10 +438,11 @@
       });
 
       progressCounter.innerText = `${state.currentIndex + 1} / ${state.words.length}`;
-      updateTargetScroll();
+      if (!state.isDraggingThumb) {
+        updateTargetScroll();
+      }
     }
 
-    // 목표 스크롤 계산: 가운데(50%)보다 15% 더 위인 [상단 25% 지점]에 맞춤
     function updateTargetScroll() {
       const activeSpan = textContainer.querySelector(`.word[data-index="${state.currentIndex}"]`);
       if (!activeSpan) return;
@@ -374,33 +452,120 @@
       
       const currentScroll = container.scrollTop;
       const offset = spanRect.top - containerRect.top;
-      
-      // 화면 높이의 25%를 기준 라인으로 삼아 아래쪽 원고 시야를 75% 확보
-      const targetFocusLine = container.clientHeight * 0.25; 
+      const targetFocusLine = container.clientHeight * 0.25; // 상단 25% 지점
 
       state.targetScrollTop = currentScroll + (offset - targetFocusLine);
     }
 
-    // 부드러운 스크롤 애니메이션 루프
+    // 선형 보간 스크롤 애니메이션 루프
     function smoothScrollLoop() {
-      const diff = state.targetScrollTop - container.scrollTop;
-      if (Math.abs(diff) > 0.5) {
-        container.scrollTop += diff * 0.08;
+      if (!state.isDraggingThumb) {
+        const diff = state.targetScrollTop - container.scrollTop;
+        if (Math.abs(diff) > 0.5) {
+          container.scrollTop += diff * 0.08;
+        }
       }
       requestAnimationFrame(smoothScrollLoop);
     }
     requestAnimationFrame(smoothScrollLoop);
 
+    // --- 플로팅 스크롤바 동작 로직 ---
+    function showScrollbar() {
+      floatingScrollbar.classList.add('visible');
+      clearTimeout(state.fadeTimer);
+      if (!state.isDraggingThumb) {
+        state.fadeTimer = setTimeout(() => {
+          floatingScrollbar.classList.remove('visible');
+        }, 1500);
+      }
+    }
+
+    function updateThumbPosition() {
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+      const trackHeight = floatingScrollbar.clientHeight;
+
+      if (scrollHeight <= clientHeight) {
+        scrollThumb.style.display = 'none';
+        return;
+      }
+      scrollThumb.style.display = 'block';
+
+      // 썸 높이 계산 (최소 40px)
+      const thumbHeight = Math.max(40, (clientHeight / scrollHeight) * trackHeight);
+      scrollThumb.style.height = `${thumbHeight}px`;
+
+      // 썸 탑 위치 계산
+      const maxScrollTop = scrollHeight - clientHeight;
+      const currentScrollRatio = container.scrollTop / maxScrollTop;
+      const maxThumbTop = trackHeight - thumbHeight;
+      const thumbTop = currentScrollRatio * maxThumbTop;
+
+      scrollThumb.style.top = `${thumbTop}px`;
+    }
+
+    // 컨테이너 스크롤 시 썸 동기화 및 페이드인
+    container.addEventListener('scroll', () => {
+      if (!state.isDraggingThumb) {
+        updateThumbPosition();
+        showScrollbar();
+      }
+    });
+
+    // 플로팅 썸 터치 드래그 이벤트 (모바일/태블릿 및 마우스 지원)
+    function handleThumbMove(clientY) {
+      const trackRect = floatingScrollbar.getBoundingClientRect();
+      const trackHeight = floatingScrollbar.clientHeight;
+      const thumbHeight = scrollThumb.offsetHeight;
+      const maxThumbTop = trackHeight - thumbHeight;
+
+      let relativeY = clientY - trackRect.top - (thumbHeight / 2);
+      relativeY = Math.max(0, Math.min(maxThumbTop, relativeY));
+
+      const ratio = relativeY / maxThumbTop;
+      const maxScrollTop = container.scrollHeight - container.clientHeight;
+      
+      container.scrollTop = ratio * maxScrollTop;
+      state.targetScrollTop = container.scrollTop;
+      scrollThumb.style.top = `${relativeY}px`;
+    }
+
+    function onPointerDown(e) {
+      state.isDraggingThumb = true;
+      showScrollbar();
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      handleThumbMove(clientY);
+
+      const onPointerMove = (moveEvent) => {
+        const y = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+        handleThumbMove(y);
+      };
+
+      const onPointerUp = () => {
+        state.isDraggingThumb = false;
+        showScrollbar();
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
+      };
+
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp);
+    }
+
+    floatingScrollbar.addEventListener('mousedown', onPointerDown);
+    floatingScrollbar.addEventListener('touchstart', onPointerDown, { passive: false });
+
     // 실시간 음성 매칭 엔진
     function processRealtimeSpeech(transcript) {
       if (!transcript) return;
-      
       const incomingWords = transcript.trim().split(/\s+/).map(normalizeWord).filter(Boolean);
       if (incomingWords.length === 0) return;
 
       const lastWord = incomingWords[incomingWords.length - 1];
-
-      // 현재 인덱스 기준 앞뒤 반경 내에서 탐색
       const lookAheadRange = 12;
       const start = Math.max(0, state.currentIndex - 2);
       const end = Math.min(state.words.length, state.currentIndex + lookAheadRange);
@@ -438,14 +603,12 @@
       };
 
       rec.onerror = (e) => {
-        console.warn("Speech API 상태:", e.error);
+        console.warn("Speech API 오류 무시:", e.error);
       };
 
       rec.onend = () => {
         if (state.isListening) {
-          try {
-            rec.start();
-          } catch (e) {}
+          try { rec.start(); } catch (e) {}
         }
       };
 
@@ -455,10 +618,8 @@
     function startListening() {
       if (!state.recognition) initSpeechRecognition();
       state.isListening = true;
-      try {
-        state.recognition.start();
-      } catch(e) {}
-      btnToggle.innerText = '⏹️ 인식 정지';
+      try { state.recognition.start(); } catch(e) {}
+      btnToggle.innerText = '⏹️';
       btnToggle.classList.add('active');
       speechPreview.innerText = "듣고 있습니다...";
     }
@@ -466,21 +627,20 @@
     function stopListening() {
       state.isListening = false;
       if (state.recognition) {
-        try {
-          state.recognition.stop();
-        } catch(e) {}
+        try { state.recognition.stop(); } catch(e) {}
       }
-      btnToggle.innerText = '🎙️ 인식 시작';
+      btnToggle.innerText = '🎙️';
       btnToggle.classList.remove('active');
       speechPreview.innerText = "정지됨";
     }
 
-    // 스타일 제어 함수
+    // 폰트 및 줄간격 제어
     function setFontSize(newVal) {
       state.fontSize = Math.min(64, Math.max(20, newVal));
       valFontSize.innerText = state.fontSize;
       document.documentElement.style.setProperty('--font-size', `${state.fontSize}px`);
       updateTargetScroll();
+      updateThumbPosition();
     }
 
     function setLineHeight(newVal) {
@@ -488,24 +648,17 @@
       valLineHeight.innerText = state.lineHeight.toFixed(1);
       document.documentElement.style.setProperty('--line-height', state.lineHeight);
       updateTargetScroll();
+      updateThumbPosition();
     }
 
-    // 글자 크기 +/- 버튼
     btnFontDec.addEventListener('click', () => setFontSize(state.fontSize - 2));
     btnFontInc.addEventListener('click', () => setFontSize(state.fontSize + 2));
-
-    // 줄 간격 +/- 버튼
     btnLineDec.addEventListener('click', () => setLineHeight(state.lineHeight - 0.1));
     btnLineInc.addEventListener('click', () => setLineHeight(state.lineHeight + 0.1));
 
-    // 버튼 이벤트 리스너
     btnToggle.addEventListener('click', () => {
       if (state.isListening) stopListening();
       else startListening();
-    });
-
-    btnReset.addEventListener('click', () => {
-      setWordIndex(0);
     });
 
     btnEdit.addEventListener('click', () => {
@@ -528,9 +681,32 @@
 
     window.addEventListener('resize', () => {
       updateTargetScroll();
+      updateThumbPosition();
     });
 
-    // 시작 초기화
+    // --- Yslide 외부 연동 전역 API ---
+    window.YslidePrompter = {
+      // 1. 외부에서 직접 호출: window.YslidePrompter.loadScript("새로운 원고...");
+      loadScript: function(scriptText) {
+        if (!scriptText) return;
+        state.words = parseScript(scriptText);
+        renderTokens();
+        speechPreview.innerText = "Yslide 원고 동기화 완료";
+      },
+      start: startListening,
+      stop: stopListening,
+      setIndex: setWordIndex
+    };
+
+    // 2. iframe / 부모 창 postMessage 연동 지원
+    window.addEventListener('message', (event) => {
+      if (!event.data) return;
+      if (event.data.type === 'SET_PROMPTER_SCRIPT') {
+        window.YslidePrompter.loadScript(event.data.script);
+      }
+    });
+
+    // 초기 실행
     window.addEventListener('DOMContentLoaded', () => {
       state.words = parseScript(DEFAULT_SCRIPT);
       renderTokens();
